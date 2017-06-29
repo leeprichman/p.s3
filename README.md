@@ -1,4 +1,4 @@
-[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/flowAutomateR)](http://cran.r-project.org/package=Neoepitopes)
+[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/p.S3)](http://cran.r-project.org/package=p.S3) ![](https://img.shields.io/badge/build-passing-brightgreen.svg)
 
 # p.s3
 

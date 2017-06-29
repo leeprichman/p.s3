@@ -1,5 +1,7 @@
 
-## ---- import_S3_json
+
+
+## -------- import_S3_json
 #' Import AWS CLI S3 list-object-versions json output to a data table.
 #'
 #' @param x Character. AWS CLI s3api json output.
@@ -13,7 +15,7 @@ if (readLines(x, n = 10) %>% length < 1) {
                        }
 S3_df <- try(jsonlite::fromJSON(txt = x), silent = TRUE)
 if (!S3_df$DeleteMarkers %>% is.null) {
-  DeleteMarkers <- S3_df$DeleteMarkers %>% as.data.table
+  DeleteMarkers <- S3_df$DeleteMarkers %>% data.table::as.data.table
   Owner_name_vector <- DeleteMarkers$Owner[,1]
   Owner_id_vector <- DeleteMarkers$Owner[,2]
   DeleteMarkers$Owner <- NULL
@@ -24,7 +26,7 @@ if (!S3_df$DeleteMarkers %>% is.null) {
   DeleteMarkers <- NULL
 }
 if (!S3_df$Versions %>% is.null) {
-  Versions <- S3_df$Versions %>% as.data.table
+  Versions <- S3_df$Versions %>% data.table::as.data.table
   Owner_name_vector <- Versions$Owner[,1]
   Owner_id_vector <- Versions$Owner[,2]
   Versions$Owner <- NULL
@@ -43,7 +45,7 @@ return(S3_dt)
 
 
 
-## ---- index_S3_objects
+## -------- index_S3_objects
 #' Index S3 objects from a list of S3 buckets.
 #'
 #' Quickly index all S3 objects in a bucket list into a data table. Requires AWS CLI.
@@ -110,7 +112,7 @@ return(S3_dt)
 
 
 
-## ---- print_S3_statistics
+## -------- print_S3_statistics
 #' Print statistics about S3 buckets.
 #'
 #' @param S3_dt Data table output from index_S3_objects.
@@ -154,7 +156,7 @@ S3_dt[!Key %chin% dm_dt$Key, .N, by = c("Key_first_folder", "Key_second_folder")
 print("Common extensions")
 S3_dt[, .N, by = Key_ext][order(-N)] %>% head(100) %>% print
 
-print("Only delete marke.l()rs:")
+print("Only delete markers:")
 S3_dt[Key %chin% setdiff(S3_dt[DeleteMarker == TRUE]$Key %>% unique, S3_dt[DeleteMarker == FALSE]$Key %>% unique)] %>% nrow
 
   sink(NULL)
@@ -178,7 +180,7 @@ readLines(log) %>% print
 
 
 
-## ---- delete_S3_object_version
+## -------- delete_S3_object_version
 #' Delete S3 object versions.
 #'
 #' @param dt Data table. Output from index_S3_objects.
@@ -212,7 +214,7 @@ system(paste0("/usr/local/bin/parallel -m -j ", cores, " :::: aws_delete_command
 
 
 
-## ---- get_S3_object_version
+## -------- get_S3_object_version
 #' Download S3 object versions.
 #'
 #' @param dt Data table. Output from index_S3_objects.
@@ -248,7 +250,7 @@ file.remove("aws_get_commands.txt")
 
 
 
-## ---- restore_S3_object_version
+## -------- restore_S3_object_version
 #' Restore S3 object versions from AWS Glacier.
 #'
 #' @param dt Data table. Output from index_S3_objects.
@@ -272,25 +274,24 @@ file.remove("aws_restore_commands.txt")
 
 
 
-## ---- copy_S3_object_version
+## -------- copy_S3_object_version
 #' Copying S3 object versions.
 #'
 #' @param dt Data table. Output from index_S3_objects.
 #' @param cores Numeric. Cores to parallelize over.
 #' @param storage.class Characer. Storage class. One of STANDARD, REDUCED_REDUNDANCY, STANDARD_IA.
 #' @param canned.acl Character. Canned ACL to apply to the object. One of private, public-read, public-read-write, authenticated-read, aws-exec-read, bucket-owner-read, bucket-owner-full-control.
-#' @param metadata.directive Character. One of COPY, REPLACE.
 #' @param copy.prefix Character. Prefix to copy to, begining with bucket name. NULL will copy the object in place.
 #'
 #' @export copy_S3_object_version
 #'
 
-copy_S3_object_version <- function(dt, cores = parallel::detectCores()*4, storage.class = "STANDARD", canned.acl = "private", metadata.directive = "COPY", copy.prefix = NULL) {
+copy_S3_object_version <- function(dt, cores = parallel::detectCores()*4, storage.class = "STANDARD", canned.acl = "private", copy.prefix = NULL) {
 
 if (!copy.prefix %>% is.null){
 
 commands <- sapply(1:nrow(dt), function(x){
-paste0("aws --cli-read-timeout 0 --cli-connect-timeout 0 s3api copy-object --copy-source ", dt$full_name[x] %>% shQuote, " --bucket ", copy.prefix %>% stringr::str_extract("^[^/]+") %>% gsub("/", "", .) %>% shQuote, " --acl ", canned.acl %>% shQuote, " --key ", dt$Key[x] %>% stringr::str_extract("[^/]+$") %>% shQuote, " --metadata-directive ", metadata.directive, " --storage-class ", storage.class, ";")})
+paste0("aws --cli-read-timeout 0 --cli-connect-timeout 0 s3api copy-object --copy-source ", dt$full_name[x] %>% shQuote, " --bucket ", copy.prefix %>% stringr::str_extract("^[^/]+") %>% gsub("/", "", .) %>% shQuote, " --acl ", canned.acl %>% shQuote, " --key ", dt$Key[x] %>% stringr::str_extract("[^/]+$") %>% shQuote, " --metadata-directive COPY --storage-class ", storage.class, ";")})
 }
 if (copy.prefix %>% is.null){
 
@@ -305,7 +306,7 @@ file.remove("aws_copy_commands.txt")
 
 
 
-## ---- aws_query_string_auth_url
+## -------- aws_query_string_auth_url
 #' Generating URLs for S3 resources with query string request authentication.
 #'
 #' See \href{https://www.r-bloggers.com/an-r-function-for-generating-authenticated-urls-to-private-web-sites-hosted-on-aws-s3/]{blog post}.
@@ -347,7 +348,7 @@ url <- system(paste0("bitly -l zkcjlsm -k $BITLY_KEY -u '", authenticated_url, "
 return(data.table::data.table(Key = dt$Key[i], auth_url = authenticated_url, short_url = url, LastModified = dt$LastModified[i], Size = dt$Size[i], bucket = dt$bucket[i], markdown_link = paste0("* [", dt$Key[i], "](", authenticated_url, ")")))
 }
 url_dt <- data.table::rbindlist(urls)
-data.table::fwrite(url_dt, "aws_urls.tsv", sep = "\t")
+data.table::fwrite(url_dt, "aws_urls.csv")
 data.table::fwrite(url_dt[, .(markdown_link)], "aws_url.md", sep = "\t", col.names = FALSE)
 return(url_dt)
 }
