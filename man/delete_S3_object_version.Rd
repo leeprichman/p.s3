@@ -4,12 +4,14 @@
 \alias{delete_S3_object_version}
 \title{Delete S3 object versions.}
 \usage{
-delete_S3_object_version(dt, cores = parallel::detectCores() * 4)
+delete_S3_object_version(dt, cores = parallel::detectCores() * 4, safe)
 }
 \arguments{
 \item{dt}{Data table. Output from index_S3_objects.}
 
 \item{cores}{Numeric. Cores to parallelize over.}
+
+\item{safe}{Logical. Restrict deletions to old versions?}
 }
 \description{
 Delete S3 object versions.

@@ -5,8 +5,7 @@
 \title{Copying S3 object versions.}
 \usage{
 copy_S3_object_version(dt, cores = parallel::detectCores() * 4,
-  storage.class = "STANDARD", canned.acl = "private",
-  metadata.directive = "COPY", copy.prefix = NULL)
+  storage.class = "STANDARD", canned.acl = "private", copy.prefix = NULL)
 }
 \arguments{
 \item{dt}{Data table. Output from index_S3_objects.}
@@ -16,8 +15,6 @@ copy_S3_object_version(dt, cores = parallel::detectCores() * 4,
 \item{storage.class}{Characer. Storage class. One of STANDARD, REDUCED_REDUNDANCY, STANDARD_IA.}
 
 \item{canned.acl}{Character. Canned ACL to apply to the object. One of private, public-read, public-read-write, authenticated-read, aws-exec-read, bucket-owner-read, bucket-owner-full-control.}
-
-\item{metadata.directive}{Character. One of COPY, REPLACE.}
 
 \item{copy.prefix}{Character. Prefix to copy to, begining with bucket name. NULL will copy the object in place.}
 }

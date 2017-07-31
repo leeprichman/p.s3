@@ -4,12 +4,15 @@
 \alias{print_S3_statistics}
 \title{Print statistics about S3 buckets.}
 \usage{
-print_S3_statistics(S3_dt, log = "./print_S3_statistics.log")
+print_S3_statistics(S3_dt, log = "./print_S3_statistics.log",
+  delete_markers = TRUE)
 }
 \arguments{
 \item{S3_dt}{Data table output from index_S3_objects.}
 
 \item{log}{File path for log output.}
+
+\item{delete_markers}{Logical. Include delete markers?}
 }
 \description{
 Print statistics about S3 buckets.

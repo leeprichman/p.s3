@@ -105,6 +105,8 @@ S3_dt[, Key_ext := Key_basename %>%
   stringr::str_extract("(?<=\\.)[^\\.]+$") %>%
   stringr::str_replace("SAVR.*", "")]
 
+S3_dt %>% setkey(LastModified)
+
 list.files(path = ".", pattern = "aws_s3_objects.*.json$", recursive = TRUE, full.names = TRUE) %>% file.remove
 
 return(S3_dt)
@@ -116,14 +118,17 @@ return(S3_dt)
 #' Print statistics about S3 buckets.
 #'
 #' @param S3_dt Data table output from index_S3_objects.
+#' @param delete_markers Logical. Include delete markers?
 #' @param log File path for log output.
 #'
 #' @export print_S3_statistics
 #'
 
-print_S3_statistics <- function(S3_dt, log = "./print_S3_statistics.log") {
+print_S3_statistics <- function(S3_dt, log = "./print_S3_statistics.log", delete_markers = TRUE) {
 
 sink(log)
+
+if (!delete_markers) S3_dt <- S3_dt[DeleteMarker == FALSE]
 
 paste0("Bucket number: ", S3_dt$bucket %>% as.factor %>% levels %>% length) %>% print
 paste0("Total objects, all versions:", S3_dt %>% nrow) %>% print
@@ -185,13 +190,16 @@ readLines(log) %>% print
 #'
 #' @param dt Data table. Output from index_S3_objects.
 #' @param cores Numeric. Cores to parallelize over.
+#' @param safe Logical. Restrict deletions to old versions?
 #'
 #' @export delete_S3_object_version
 #'
 
-delete_S3_object_version <- function(dt, cores = parallel::detectCores()*4) {
+delete_S3_object_version <- function(dt, cores = parallel::detectCores()*4, safe) {
 
 dt <- dt[!Key %>% is.na & !bucket %>% is.na]
+
+if (safe) dt <- dt[IsLatest == FALSE]
 
 dt %>% nrow %>% print
 
@@ -333,19 +341,28 @@ expiration_time <- as.integer(Sys.time() + lifetime_days * 3600 * 24)
 if (dt %>% is.null){
 dt <- data.table::data.table(full_name = full_name, LastModified = NA, Size = NA, bucket = full_name %>% stringr::str_extract("^[^/]+"))
 }
+
 urls <- foreach::foreach(i = 1:nrow(dt), .errorhandling = "pass", .verbose = FALSE) %do% {
   canonical_string <- paste0("GET", "\n\n\n", expiration_time, "\n/", dt$full_name[i])
-  signature <- digest::hmac(enc2utf8(aws_secret_access_key), enc2utf8(canonical_string), "sha1", raw = TRUE)
-  signature_url_encoded <- URLencode(base64enc::base64encode(signature), reserve = TRUE)
-  authenticated_url <- paste0("https://s3.amazonaws.com/", dt$full_name[i],
-                              "?AWSAccessKeyId=", enc2utf8(aws_access_key_id), "&Expires=", expiration_time,
-                              "&Signature=", signature_url_encoded)
+  signature <- digest::hmac(enc2utf8(aws_secret_access_key),
+                       enc2utf8(canonical_string), "sha1", raw = TRUE)
+  signature_url_encoded <- URLencode(base64enc::base64encode(signature),
+                                     reserve = TRUE)
+
+  authenticated_url <- paste0("https://s3.amazonaws.com/",
+                              dt$full_name[i],
+                              "?AWSAccessKeyId=",
+                              enc2utf8(aws_access_key_id),
+                              "&Expires=",
+                              expiration_time,
+                              "&Signature=",
+                              signature_url_encoded)
 if (bitly){
 url <- system(paste0("bitly -l zkcjlsm -k $BITLY_KEY -u '", authenticated_url, "'"), intern = TRUE)
 } else {
   url <- NA
 }
-return(data.table::data.table(Key = dt$Key[i], auth_url = authenticated_url, short_url = url, LastModified = dt$LastModified[i], Size = dt$Size[i], bucket = dt$bucket[i], markdown_link = paste0("* [", dt$Key[i], "](", authenticated_url, ")")))
+return(data.table::data.table(Key = dt$full_name %>% basename %>% .[i], auth_url = authenticated_url, short_url = url, LastModified = dt$LastModified[i], Size = dt$Size[i], bucket = dt$bucket[i], markdown_link = paste0("* [", dt$Key[i], "](", authenticated_url, ")")))
 }
 url_dt <- data.table::rbindlist(urls)
 data.table::fwrite(url_dt, "aws_urls.csv")
