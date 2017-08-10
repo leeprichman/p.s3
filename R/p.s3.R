@@ -1,13 +1,23 @@
 
 
 
-## -------- import_S3_json
+## ---- import_S3_json
 #' Import AWS CLI S3 list-object-versions json output to a data table.
 #'
 #' @param x Character. AWS CLI s3api json output.
 #'
 #' @export import_S3_json
 #'
+#' @import data.table
+#' @importFrom base64enc base64encode
+#' @importFrom digest hmac
+#' @importFrom foreach foreach
+#' @importFrom jsonlite fromJSON
+#' @importFrom lubridate as_datetime now
+#' @importFrom magrittr %>% %T>% %$%
+#' @importFrom parallel detectCores mclapply
+#' @importFrom stringr str_extract str_replace str_replace_all
+#' @importFrom utils URLencode
 
 import_S3_json <- function(x){
 if (readLines(x, n = 10) %>% length < 1) {
@@ -45,7 +55,7 @@ return(S3_dt)
 
 
 
-## -------- index_S3_objects
+## ---- index_S3_objects
 #' Index S3 objects from a list of S3 buckets.
 #'
 #' Quickly index all S3 objects in a bucket list into a data table. Requires AWS CLI.
@@ -72,7 +82,6 @@ data.table::fwrite(file = "index_S3_objects.txt", col.names = FALSE, sep = "\t")
 system(paste0("/usr/local/bin/parallel --delay 0.2 -j ", buckets %>% length, " :::: index_S3_objects.txt"))
 
 file.remove("index_S3_objects.txt")
-new.dP.backend(parallel::detectCores())
 json_import <- list.files(path = ".", pattern = "aws_s3_objects.*.json$", full.names = TRUE)
 
 S3_l <- foreach::foreach(j = 1:length(json_import), .errorhandling = "pass", .verbose = TRUE) %dopar% {
@@ -114,7 +123,7 @@ return(S3_dt)
 
 
 
-## -------- print_S3_statistics
+## ---- print_S3_statistics
 #' Print statistics about S3 buckets.
 #'
 #' @param S3_dt Data table output from index_S3_objects.
@@ -149,7 +158,34 @@ print("Total size by bucket, current versions excluding deletion markers:")
 S3_dt[IsLatest == TRUE & DeleteMarker == FALSE, .("Size (GB)" = (Size %>% sum(na.rm = TRUE)/1E9) %>% ceiling), by = bucket][order(-`Size (GB)`)] %>% print
 
 print("Largest files:")
-S3_dt[, .("Size (MB)" = Size/1E6 %>% ceiling, Key)][order(-`Size (MB)`)] %>% head(100) %>% print
+S3_dt[IsLatest == TRUE, .("Size (MB)" = Size/1E6 %>% ceiling, Key)][order(-`Size (MB)`)] %>% head(100) %>% print
+
+print("Largest files by extension:")
+S3_dt[IsLatest == TRUE & DeleteMarker == FALSE, .("Size (GB)" = (Size %>% sum(na.rm = TRUE)/1E9) %>% ceiling), by = Key_ext][order(-`Size (GB)`)] %>% head(100) %>% print
+
+print("Largest files key dirname:")
+S3_dt[IsLatest == TRUE & DeleteMarker == FALSE, .("Size (GB)" = (Size %>% sum(na.rm = TRUE)/1E9) %>% ceiling), by = Key %>% dirname][order(-`Size (GB)`)] %>% head(100) %>% print
+
+print("Largest previous version files:")
+S3_dt[IsLatest == FALSE, .("Size (MB)" = Size/1E6 %>% ceiling, Key)][order(-`Size (MB)`)] %>% head(100) %>% print
+
+print("Largest previous version files by extension:")
+S3_dt[IsLatest == FALSE & DeleteMarker == FALSE, .("Size (GB)" = (Size %>% sum(na.rm = TRUE)/1E9) %>% ceiling), by = Key_ext][order(-`Size (GB)`)] %>% head(100) %>% print
+
+print("Largest previous version files key dirname:")
+S3_dt[IsLatest == FALSE & DeleteMarker == FALSE, .("Size (GB)" = (Size %>% sum(na.rm = TRUE)/1E9) %>% ceiling), by = Key %>% dirname][order(-`Size (GB)`)] %>% head(100) %>% print
+
+print("Files by extension:")
+S3_dt[IsLatest == FALSE & DeleteMarker == FALSE, .N, by = Key_ext][order(-N)] %>% head(100) %>% print
+
+print("Files key dirname:")
+S3_dt[IsLatest == FALSE & DeleteMarker == FALSE, .N, by = Key %>% dirname][order(-N)] %>% head(100) %>% print
+
+print("Previous files by extension:")
+S3_dt[IsLatest == FALSE & DeleteMarker == FALSE, .N, by = Key_ext][order(-N)] %>% head(100) %>% print
+
+print("Previous files key dirname:")
+S3_dt[IsLatest == FALSE & DeleteMarker == FALSE, .N, by = Key %>% dirname][order(-N)] %>% head(100) %>% print
 
 print("Most common keys:")
 S3_dt[, .("Common keys" = .N), by = Key][order(-`Common keys`)] %>% head(100) %>% print
@@ -166,26 +202,13 @@ S3_dt[Key %chin% setdiff(S3_dt[DeleteMarker == TRUE]$Key %>% unique, S3_dt[Delet
 
   sink(NULL)
 
-  foreach::foreach(b = S3_dt$bucket %>% as.factor %>% levels, .errorhandling = "pass",
-      .verbose = TRUE) %dopar% {
-      sink(paste0(log %>% stringr::str_replace("\\..*", "_"), b, ".log"))
-  print(b)
-  print("Largest files:")
-  S3_dt[bucket == b, .("Size (MB)" = Size/1E6 %>% ceiling, Key)][order(-`Size (MB)`)] %>% head(100) %>% print
-  print("Most common keys:")
-  S3_dt[bucket == b, .("Common keys" = .N), by = Key][order(-`Common keys`)] %>% head(100) %>% print
-
-  sink(NULL)
-
-return(NULL)
-}
 readLines(log) %>% print
 
 }
 
 
 
-## -------- delete_S3_object_version
+## ---- delete_S3_object_version
 #' Delete S3 object versions.
 #'
 #' @param dt Data table. Output from index_S3_objects.
@@ -222,7 +245,7 @@ system(paste0("/usr/local/bin/parallel -m -j ", cores, " :::: aws_delete_command
 
 
 
-## -------- get_S3_object_version
+## ---- get_S3_object_version
 #' Download S3 object versions.
 #'
 #' @param dt Data table. Output from index_S3_objects.
@@ -258,7 +281,7 @@ file.remove("aws_get_commands.txt")
 
 
 
-## -------- restore_S3_object_version
+## ---- restore_S3_object_version
 #' Restore S3 object versions from AWS Glacier.
 #'
 #' @param dt Data table. Output from index_S3_objects.
@@ -282,7 +305,7 @@ file.remove("aws_restore_commands.txt")
 
 
 
-## -------- copy_S3_object_version
+## ---- copy_S3_object_version
 #' Copying S3 object versions.
 #'
 #' @param dt Data table. Output from index_S3_objects.
@@ -314,10 +337,10 @@ file.remove("aws_copy_commands.txt")
 
 
 
-## -------- aws_query_string_auth_url
+## ---- aws_query_string_auth_url
 #' Generating URLs for S3 resources with query string request authentication.
 #'
-#' See \href{https://www.r-bloggers.com/an-r-function-for-generating-authenticated-urls-to-private-web-sites-hosted-on-aws-s3/]{blog post}.
+#' Generating URLs, optionally shortened, for S3 resources with query string request authentication for the specified time interval.
 #'
 #' @param dt Data table. Output from index_S3_objects.
 #' @param full_name Character. Objects to lookup.
@@ -347,7 +370,7 @@ urls <- foreach::foreach(i = 1:nrow(dt), .errorhandling = "pass", .verbose = FAL
   signature <- digest::hmac(enc2utf8(aws_secret_access_key),
                        enc2utf8(canonical_string), "sha1", raw = TRUE)
   signature_url_encoded <- URLencode(base64enc::base64encode(signature),
-                                     reserve = TRUE)
+                                     reserved = TRUE)
 
   authenticated_url <- paste0("https://s3.amazonaws.com/",
                               dt$full_name[i],

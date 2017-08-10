@@ -1,0 +1,18 @@
+# R for travis: see documentation at https://docs.travis-ci.com/user/languages/r
+
+language: r
+r:
+  - bioc-devel
+  - bioc-release
+  - release
+  - devel
+sudo: true
+cache: packages
+notifications:
+  slack:
+    rooms:
+      - svn-group:WwFD9sJdhbUOPdCX9WA329BL#travis-ci
+  email:
+    on_success: always
+    recipients:
+      - andrewrech@gmail.com

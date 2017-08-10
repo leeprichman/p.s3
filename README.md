@@ -1,8 +1,8 @@
-[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/p.S3)](http://cran.r-project.org/package=p.S3) ![](https://img.shields.io/badge/build-passing-brightgreen.svg)
+[![Build Status](https://travis-ci.org/andrewrech/p.s3.svg?branch=master)](https://travis-ci.org/andrewrech/p.s3) [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/p.S3)](http://cran.r-project.org/package=p.S3)
 
 # p.s3
 
-Fast basic AWS S3 R.
+Fast, basic AWS S3 CLI in R.
 
 ## Description
 
@@ -40,7 +40,7 @@ devtools::install_github("andrewrech/p.s3")
 
 ## Authors
 
-[Andrew J. Rech](mailto:andrewrech@gmail.com)
+[Andrew J. Rech](http://info.rech.io)
 
 ## License
 

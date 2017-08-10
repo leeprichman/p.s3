@@ -1,7 +1,0 @@
-# TODO p.s3
-
-TODO for the `p.s3` project
-
-## TODO
-
-## NOTES

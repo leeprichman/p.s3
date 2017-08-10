@@ -29,3 +29,6 @@ aws_query_string_auth_url(dt = NULL, full_name = NULL,
 
 \item{bitly}{Logical. Generated a shortened url using bit.ly?}
 }
+\description{
+Generating URLs, optionally shortened, for S3 resources with query string request authentication for the specified time interval.
+}
