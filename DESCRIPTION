@@ -3,12 +3,12 @@ Title: Fast, basic AWS S3 CLI in R
 Version: 0.0.0.9000
 Authors@R: "Andrew J. Rech <andrewrech@gmail.com> [aut, cre]"
 Description: Parallelized, basic Amazon Web Services S3 API operations from R using GNU Parallel and the AWS CLI, including S3 indexing to a data table. The purpose is to allow fast, fine-grained control of versioned S3 buckets from R.
-Depends: R (>= 3.4.1)
+Depends: R (>= 3.4.0)
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
 RemoteUrl: http://info.rech.io
-Remotes: Rdatatable/data.table
-Imports: base64enc,data.table,digest,foreach,jsonlite,lubridate,magrittr,parallel,stringr,utils
+Imports: base64enc, data.table, digest, foreach, jsonlite, lubridate, magrittr, parallel, stringr, utils
+Remotes: tidyverse/magrittr, Rdatatable/data.table
 LazyLoad: yes
 RoxygenNote: 6.0.1.9000

@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/andrewrech/p.s3.svg?branch=master)](https://travis-ci.org/andrewrech/p.s3) [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/p.S3)](http://cran.r-project.org/package=p.S3)
+[![Build Status](https://travis-ci.org/andrewrech/p.s3.svg?branch=master)](https://travis-ci.org/andrewrech/p.s3) [![codecov.io](https://codecov.io/github/andrewrech/p.s3/coverage.svg?branch=master)](https://codecov.io/github/andrewrech/p.s3?branch=master) [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/p.S3)](http://cran.r-project.org/package=p.S3) ![](https://img.shields.io/badge/version-0.0.1-blue.svg)
 
 # p.s3
 

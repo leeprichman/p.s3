@@ -14,7 +14,7 @@
 #' @importFrom foreach foreach
 #' @importFrom jsonlite fromJSON
 #' @importFrom lubridate as_datetime now
-#' @importFrom magrittr %>% %T>% %$%
+#' @importFrom magrittr %>% %T>% %$% %<>%
 #' @importFrom parallel detectCores mclapply
 #' @importFrom stringr str_extract str_replace str_replace_all
 #' @importFrom utils URLencode
